@@ -2,11 +2,15 @@ import { RequestHandler } from "express";
 import Note from "../models/note";
 import createHttpError from "http-errors";
 import mongoose from "mongoose";
+import {assertIsDefined} from "../util/assertIsDefined";
 
 export const getNotes: RequestHandler = async (req, res, next) => {
+    const authenticatedUserId = req.session.userId;
+
     try {
-        const notes = await Note.find().exec();
-        // I can add if notes are empty control here
+        assertIsDefined(authenticatedUserId);
+
+        const notes = await Note.find({userId: authenticatedUserId}).exec();
         res.status(200).json(notes);
     } catch (error) {
         next(error);
@@ -15,9 +19,11 @@ export const getNotes: RequestHandler = async (req, res, next) => {
 
 export const showNote: RequestHandler = async (req, res, next) => {
     const noteId = req.params.noteId;
+    const authenticatedUserId = req.session.userId;
 
     try {
-        // TODO: make better error handling that is not required duplications.
+        assertIsDefined(authenticatedUserId);
+
         if (!mongoose.isValidObjectId(noteId)) {
             throw createHttpError(400, "Invalid note id.");
         }
@@ -26,6 +32,10 @@ export const showNote: RequestHandler = async (req, res, next) => {
 
         if (!note) {
             throw createHttpError(404, "Note is not found.");
+        }
+
+        if (!note.userId.equals(authenticatedUserId)) {
+            throw createHttpError(401, "You are not authorized here!");
         }
 
         res.status(200).json(note);
@@ -42,13 +52,17 @@ interface createNoteBody {
 export const createNote: RequestHandler<unknown, unknown, createNoteBody, unknown> = async (req, res, next) => {
     const title = req.body.title;
     const text = req.body.text;
+    const authenticatedUserId = req.session.userId;
 
     try {
+        assertIsDefined(authenticatedUserId);
+
         if (!title) {
             throw createHttpError(400, "Title field is required.");
         }
 
         const newNote = await Note.create({
+            userId: authenticatedUserId,
             title: title,
             text: text,
         });
@@ -72,8 +86,11 @@ export const updateNote: RequestHandler<updateNoteParams, unknown, updateNoteBod
     const noteId = req.params.noteId;
     const newTitle = req.body.title;
     const newText = req.body.text;
+    const authenticatedUserId = req.session.userId;
 
     try {
+        assertIsDefined(authenticatedUserId);
+
         if (!mongoose.isValidObjectId(noteId)) {
             throw createHttpError(400, "Invalid note id.");
         }
@@ -86,6 +103,10 @@ export const updateNote: RequestHandler<updateNoteParams, unknown, updateNoteBod
 
         if (!note) {
             throw createHttpError(404, "Note is not found.");
+        }
+
+        if (!note.userId.equals(authenticatedUserId)) {
+            throw createHttpError(401, "You are not authorized here!");
         }
 
         note.title = newTitle;
@@ -101,8 +122,11 @@ export const updateNote: RequestHandler<updateNoteParams, unknown, updateNoteBod
 
 export const deleteNote: RequestHandler = async (req, res, next) => {
     const noteId = req.params.noteId;
+    const authenticatedUserId = req.session.userId;
 
     try {
+        assertIsDefined(authenticatedUserId);
+
         if (!mongoose.isValidObjectId(noteId)) {
             throw createHttpError(400, "Invalid note id.");
         }
@@ -111,6 +135,10 @@ export const deleteNote: RequestHandler = async (req, res, next) => {
 
         if (!deleteNote) {
             throw createHttpError(404, "Note is not found.");
+        }
+
+        if (!deleteNote.userId.equals(authenticatedUserId)) {
+            throw createHttpError(401, "You are not authorized here!");
         }
 
         res.sendStatus(200);
