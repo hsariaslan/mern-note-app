@@ -22,16 +22,22 @@ interface SignUpBody {
     username?: string,
     email?: string,
     password?: string,
+    confirm_password?: string,
 }
 
 export const signUp: RequestHandler<unknown, unknown, SignUpBody, unknown> = async(req, res, next) => {
     const username = req.body.username;
     const email = req.body.email;
     const passwordRaw = req.body.password;
+    const confirmPassword = req.body.confirm_password;
 
     try {
-        if (!username || !email || !passwordRaw) {
+        if (!username || !email || !passwordRaw || !confirmPassword) {
             throw createHttpError(400, "Parameters are missing");
+        }
+
+        if (passwordRaw !== confirmPassword) {
+            throw createHttpError(400, "Passwords are not the same");
         }
 
         const existingUsername = await UserModel.findOne({ username: username }).exec();
