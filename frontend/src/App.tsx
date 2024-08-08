@@ -5,8 +5,10 @@ import {User} from "./models/user";
 import * as AuthApi from "./network/auth_api";
 import SignUpModal from "./components/auth/SignUpModal";
 import LoginModal from "./components/auth/LoginModal";
-import NotesPageLoggedInView from "./components/NotesPageLoggedInView";
-import NotesPageLoggedOutView from "./components/NotesPageLoggedOutView";
+import {BrowserRouter, Route, Routes} from "react-router-dom";
+import NotesPage from "./pages/NotesPage";
+import PrivacyPage from "./pages/PrivacyPage";
+import NotFoundPage from "./pages/NotFoundPage";
 
 function App() {
     const [loggedInUser, setLoggedInUser] = React.useState<User | null>(null);
@@ -19,7 +21,7 @@ function App() {
                 const user = await AuthApi.getAuthenticatedUser();
                 setLoggedInUser(user);
             } catch (error) {
-                console.log(error);
+                // console.log(error);
             }
         }
 
@@ -27,20 +29,22 @@ function App() {
     }, []);
 
     return (
-        <div>
+        <BrowserRouter>
             <NavBar
                 loggedInUser={loggedInUser}
                 onSignUpClicked={() => setSignUpModalOpen(true)}
                 onLoginClicked={() => setLoginModalOpen(true)}
                 onLogoutSuccessful={() => setLoggedInUser(null)}
             />
-            <Container className="d-flex flex-column align-items-center">
-                <>
-                    {loggedInUser
-                        ? <NotesPageLoggedInView/>
-                        : <NotesPageLoggedOutView/>}
-                </>
+
+            <Container>
+                <Routes>
+                    <Route path="/" element={<NotesPage loggedInUser={loggedInUser} />} />
+                    <Route path="/privacy" element={<PrivacyPage />} />
+                    <Route path="/*" element={<NotFoundPage />} />
+                </Routes>
             </Container>
+
             {signUpModalOpen &&
                 <SignUpModal onDismiss={() => setSignUpModalOpen(false)}
                              onSignUpSuccessful={(user: User): void => {
@@ -55,7 +59,7 @@ function App() {
                                 setLoginModalOpen(false);
                             }}/>
             }
-        </div>
+        </BrowserRouter>
     );
 }
 

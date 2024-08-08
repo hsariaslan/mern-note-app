@@ -1,8 +1,10 @@
-import {Button, Form, Modal} from "react-bootstrap";
+import {Alert, Button, Form, Modal} from "react-bootstrap";
 import { User as UserModel } from "../../models/user";
 import {useForm} from "react-hook-form";
 import * as AuthApi from "../../network/auth_api";
 import TextInputField from "../form/TextInputField";
+import {useState} from "react";
+import {BadRequestError, ConflictError, UnauthorizedError} from "../../errors/http_errors";
 
 interface SignUpModalProps {
     onDismiss: () => void,
@@ -10,6 +12,8 @@ interface SignUpModalProps {
 }
 
 const SignUpModal = ({onDismiss, onSignUpSuccessful}: SignUpModalProps) => {
+    const [errorText, setErrorText] = useState<string | null>(null);
+
     const {
         register,
         handleSubmit,
@@ -23,6 +27,9 @@ const SignUpModal = ({onDismiss, onSignUpSuccessful}: SignUpModalProps) => {
             const newUser: UserModel = await AuthApi.signUp(credentials);
             onSignUpSuccessful(newUser);
         } catch (error) {
+            if (error instanceof BadRequestError || error instanceof UnauthorizedError || error instanceof ConflictError) {
+                setErrorText(error.message);
+            }
             console.error(error);
         }
     }
@@ -35,6 +42,9 @@ const SignUpModal = ({onDismiss, onSignUpSuccessful}: SignUpModalProps) => {
                 </Modal.Title>
             </Modal.Header>
             <Modal.Body>
+                {errorText &&
+                    <Alert variant="danger">{errorText}</Alert>
+                }
                 <Form id="signUpForm" onSubmit={handleSubmit(onSubmit)}>
                     <TextInputField
                         name="username"
