@@ -29,7 +29,7 @@ function App() {
     }, []);
 
     return (
-        <BrowserRouter>
+        <BrowserRouter basename={process.env.REACT_APP_BASE_URL}>
             <NavBar
                 loggedInUser={loggedInUser}
                 onSignUpClicked={() => setSignUpModalOpen(true)}
